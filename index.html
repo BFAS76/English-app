@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Master English AI</title>
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>">
     
     <style>
@@ -13,7 +17,7 @@
             font-family: 'Segoe UI', system-ui, sans-serif; 
             background: var(--bg); color: white; text-align: center;
             margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh;
-            overflow: hidden; /* Evita scrolls desnecessários no telemóvel */
+            overflow: hidden; touch-action: manipulation;
         }
         .container { width: 90%; max-width: 400px; padding: 25px; border-radius: 30px; background: #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
         .score-badge { background: var(--primary); color: #0f172a; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; display: inline-block; }
@@ -21,12 +25,12 @@
         .controls { display: grid; gap: 15px; }
         button { 
             border: none; padding: 20px; border-radius: 15px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
-            -webkit-tap-highlight-color: transparent; /* Remove o flash azul ao clicar no iPhone */
+            -webkit-tap-highlight-color: transparent;
         }
         .btn-listen { background: #334155; color: var(--primary); border: 1px solid var(--primary); }
         .btn-speak { background: linear-gradient(135deg, var(--secondary), var(--primary)); color: #0f172a; }
         .btn-next { background: transparent; color: #94a3b8; text-decoration: underline; font-size: 0.9rem; padding: 10px; }
-        #status { margin-top: 20px; font-size: 0.9rem; color: #94a3b8; min-height: 40px; padding: 0 10px; }
+        #status { margin-top: 20px; font-size: 0.9rem; color: #94a3b8; min-height: 40px; }
         .pulse { animation: pulse-blue 1.5s infinite; }
         @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(0, 242, 254, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); } }
     </style>
@@ -35,7 +39,7 @@
 
 <div class="container">
     <div class="score-badge">SCORE: <span id="points">0</span></div>
-    <div id="phrase-display">Loading...</div>
+    <div id="phrase-display">Click "Next" to start</div>
     
     <div class="controls">
         <button class="btn-listen" onclick="playVoice()">🔊 Hear Native</button>
@@ -43,93 +47,69 @@
         <button class="btn-next" onclick="nextPhrase()">New Challenge ➔</button>
     </div>
 
-    <div id="status">Tap "Hear Native" first to wake up the voice!</div>
+    <div id="status">Tap "Hear Native" first to enable sound!</div>
 </div>
 
 <script>
-    const phrases = [
-        "How is your day going?",
-        "I love learning new things.",
-        "Can you help me with this?",
-        "Where is the nearest restaurant?",
-        "I am doing a great job."
-    ];
-
+    const phrases = ["How are you?", "I love English", "Where is the beach?", "Have a nice day", "Practice every day"];
     let currentPhrase = "";
     let score = 0;
-    let synth = window.speechSynthesis;
+    
+    // Deixamos a instância do reconhecimento global para não a recriar sempre
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    
+    if(recognition) {
+        recognition.lang = 'en-US';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+    }
 
     function nextPhrase() {
-        let newPhrase = currentPhrase;
-        while (newPhrase === currentPhrase) {
-            newPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-        }
-        currentPhrase = newPhrase;
+        currentPhrase = phrases[Math.floor(Math.random() * phrases.length)];
         document.getElementById('phrase-display').innerText = currentPhrase;
         document.getElementById('status').innerText = "Ready!";
     }
 
     function playVoice() {
-        if(!currentPhrase) return;
-        
-        // Cancela qualquer voz que esteja a falar para não sobrepor
-        synth.cancel();
-
+        window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(currentPhrase);
         msg.lang = 'en-US';
-        msg.rate = 0.85; 
-        
-        // Truque para telemóveis: forçar a ativação
-        synth.speak(msg);
-        document.getElementById('status').innerText = "Playing audio...";
+        window.speechSynthesis.speak(msg);
     }
 
     function startRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return alert("Browser not supported!");
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.continuous = false; // Importante para não ficar pedindo permissão toda hora
-        recognition.interimResults = false;
-
+        if (!recognition) return alert("Browser not supported");
+        
         const micBtn = document.getElementById('mic-btn');
         const status = document.getElementById('status');
 
         recognition.onstart = () => {
             micBtn.classList.add('pulse');
-            status.innerText = "Listening... Speak now!";
+            status.innerText = "Listening...";
         };
 
         recognition.onresult = (event) => {
             micBtn.classList.remove('pulse');
-            const result = event.results[0][0].transcript.toLowerCase().trim().replace(/[?.!,]/g, "");
-            const target = currentPhrase.toLowerCase().trim().replace(/[?.!,]/g, "");
+            const result = event.results[0][0].transcript.toLowerCase().trim();
+            const target = currentPhrase.toLowerCase().replace(/[?.!,]/g, "").trim();
 
-            if (result === target) {
-                status.innerText = `🔥 PERFECT! "${result}"`;
-                status.style.color = "#4ade80";
+            if (result.includes(target) || target.includes(result)) {
+                status.innerText = "🔥 PERFECT!";
                 score += 10;
                 document.getElementById('points').innerText = score;
-                // Feedback tátil (se suportado)
-                if(navigator.vibrate) navigator.vibrate(50);
             } else {
-                status.innerText = `You said: "${result}". Try again!`;
-                status.style.color = "#fb7185";
+                status.innerText = `You said: "${result}"`;
             }
         };
 
-        recognition.onerror = () => {
-            micBtn.classList.remove('pulse');
-            status.innerText = "Try clicking again!";
-        };
+        recognition.onerror = () => micBtn.classList.remove('pulse');
+        recognition.onend = () => micBtn.classList.remove('pulse');
 
         recognition.start();
     }
 
-    // Iniciar
     window.onload = nextPhrase;
 </script>
-
 </body>
 </html>
