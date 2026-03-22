@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master English AI</title>
+    <style>
+        :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg); color: white; text-align: center;
+            margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh;
+        }
+        .container { width: 90%; max-width: 400px; padding: 25px; border-radius: 30px; background: #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        .score-badge { background: var(--primary); color: #0f172a; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; display: inline-block; }
+        #phrase-display { font-size: 1.6rem; min-height: 80px; margin: 20px 0; font-weight: 600; line-height: 1.4; color: #f8fafc; }
+        .controls { display: grid; gap: 15px; }
+        button { 
+            border: none; padding: 18px; border-radius: 15px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .btn-listen { background: #334155; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-speak { background: linear-gradient(135deg, var(--secondary), var(--primary)); color: #0f172a; transform: scale(1.05); }
+        .btn-next { background: transparent; color: #94a3b8; text-decoration: underline; font-size: 0.9rem; }
+        #status { margin-top: 20px; font-size: 0.9rem; color: var(--primary); min-height: 20px; }
+        .pulse { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(0, 242, 254, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="score-badge">SCORE: <span id="points">0</span></div>
+    <div id="phrase-display">Click "Next" to start!</div>
+    
+    <div class="controls">
+        <button class="btn-listen" onclick="playVoice()">🔊 Hear Native</button>
+        <button id="mic-btn" class="btn-speak" onclick="startRecognition()">🎤 Press & Speak</button>
+        <button class="btn-next" onclick="nextPhrase()">New Challenge ➔</button>
+    </div>
+
+    <div id="status">Ready to practice?</div>
+</div>
+
+<script>
+    const phrases = [
+        "I would like to order a coffee, please.",
+        "Could you tell me how to get to the station?",
+        "Practice makes perfect in every language.",
+        "Success is not final, failure is not fatal.",
+        "The weather is lovely in Portugal today."
+    ];
+
+    let currentPhrase = "";
+    let score = 0;
+
+    function nextPhrase() {
+        currentPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        document.getElementById('phrase-display').innerText = currentPhrase;
+        document.getElementById('status').innerText = "Listen and repeat!";
+        document.getElementById('status').style.color = "#94a3b8";
+    }
+
+    function playVoice() {
+        if(!currentPhrase) return;
+        const msg = new SpeechSynthesisUtterance(currentPhrase);
+        msg.lang = 'en-US';
+        msg.rate = 0.9; // Um pouco mais lento para ajudar na aprendizagem
+        window.speechSynthesis.speak(msg);
+    }
+
+    function startRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return alert("Browser not supported!");
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        const micBtn = document.getElementById('mic-btn');
+        const status = document.getElementById('status');
+
+        recognition.onstart = () => {
+            micBtn.classList.add('pulse');
+            status.innerText = "Listening...";
+        };
+
+        recognition.onresult = (event) => {
+            micBtn.classList.remove('pulse');
+            const result = event.results[0][0].transcript.toLowerCase().replace(/[?.!,]/g, "");
+            const target = currentPhrase.toLowerCase().replace(/[?.!,]/g, "");
+
+            if (result === target) {
+                status.innerText = "🔥 PERFECT! +10 points";
+                status.style.color = "#4ade80";
+                score += 10;
+                document.getElementById('points').innerText = score;
+            } else {
+                status.innerText = `You said: "${result}". Try again!`;
+                status.style.color = "#fb7185";
+            }
+        };
+
+        recognition.onerror = () => {
+            micBtn.classList.remove('pulse');
+            status.innerText = "Error! Try again.";
+        };
+
+        recognition.start();
+    }
+
+    // Iniciar a primeira frase
+    nextPhrase();
+</script>
+
+</body>
+</html>
