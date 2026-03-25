@@ -3,113 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master English AI</title>
+    <title>English Master Pro</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>">
     
     <style>
-        :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; }
+        :root { --primary: #00f2fe; --bg: #0f172a; --card: #1e293b; }
         body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: var(--bg); color: white; text-align: center;
-            margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh;
-            overflow: hidden; touch-action: manipulation;
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: var(--bg); color: white; margin: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
         }
-        .container { width: 90%; max-width: 400px; padding: 25px; border-radius: 30px; background: #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
-        .score-badge { background: var(--primary); color: #0f172a; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; display: inline-block; }
-        #phrase-display { font-size: 1.6rem; min-height: 80px; margin: 20px 0; font-weight: 600; line-height: 1.4; color: #f8fafc; }
+        .container { width: 90%; max-width: 400px; background: var(--card); padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
+        .category { font-size: 0.8rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        #phrase-display { font-size: 1.5rem; font-weight: bold; margin: 20px 0; min-height: 90px; color: #f8fafc; }
         .controls { display: grid; gap: 15px; }
         button { 
-            border: none; padding: 20px; border-radius: 15px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            border: none; padding: 22px; border-radius: 18px; font-size: 1.1rem; font-weight: bold; cursor: pointer; 
+            transition: transform 0.1s; -webkit-tap-highlight-color: transparent;
         }
-        .btn-listen { background: #334155; color: var(--primary); border: 1px solid var(--primary); }
-        .btn-speak { background: linear-gradient(135deg, var(--secondary), var(--primary)); color: #0f172a; }
-        .btn-next { background: transparent; color: #94a3b8; text-decoration: underline; font-size: 0.9rem; padding: 10px; }
+        button:active { transform: scale(0.95); }
+        .btn-listen { background: #334155; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-speak { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #0f172a; }
+        .btn-next { background: transparent; color: #94a3b8; text-decoration: underline; margin-top: 10px; }
         #status { margin-top: 20px; font-size: 0.9rem; color: #94a3b8; min-height: 40px; }
-        .pulse { animation: pulse-blue 1.5s infinite; }
-        @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(0, 242, 254, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); } }
+        .score { font-size: 1.2rem; margin-bottom: 10px; color: #4ade80; }
     </style>
 </head>
-<body>
-
-<div class="container">
-    <div class="score-badge">SCORE: <span id="points">0</span></div>
-    <div id="phrase-display">Click "Next" to start</div>
+<body onclick="initAudio()"> <div class="container">
+    <div class="score">⭐ Points: <span id="points">0</span></div>
+    <div id="cat-display" class="category">Loading...</div>
+    <div id="phrase-display">Tap anywhere to start!</div>
     
     <div class="controls">
         <button class="btn-listen" onclick="playVoice()">🔊 Hear Native</button>
         <button id="mic-btn" class="btn-speak" onclick="startRecognition()">🎤 Press & Speak</button>
-        <button class="btn-next" onclick="nextPhrase()">New Challenge ➔</button>
+        <button class="btn-next" onclick="nextPhrase()">Skip Phrase ➔</button>
     </div>
-
-    <div id="status">Tap "Hear Native" first to enable sound!</div>
+    <div id="status">Make sure your volume is UP!</div>
 </div>
 
 <script>
-    const phrases = ["How are you?", "I love English", "Where is the beach?", "Have a nice day", "Practice every day"];
-    let currentPhrase = "";
+    // 📚 CONTEÚDO EXPANDIDO
+    const library = [
+        { cat: "Greetings", text: "Nice to meet you" },
+        { cat: "Greetings", text: "How have you been lately?" },
+        { cat: "Travel", text: "Where is the international airport?" },
+        { cat: "Travel", text: "I would like a ticket to London" },
+        { cat: "Restaurant", text: "The bill, please" },
+        { cat: "Restaurant", text: "Do you have any vegetarian options?" },
+        { cat: "Daily Life", text: "What time do you usually wake up?" },
+        { cat: "Daily Life", text: "I need to go shopping today" },
+        { cat: "Inspiration", text: "Never stop dreaming" },
+        { cat: "Inspiration", text: "Believe in yourself" }
+    ];
+
+    let current = {};
     let score = 0;
-    
-    // Deixamos a instância do reconhecimento global para não a recriar sempre
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-    
-    if(recognition) {
-        recognition.lang = 'en-US';
-        recognition.continuous = false;
-        recognition.interimResults = false;
+    let audioInitialized = false;
+
+    // 🔊 DESPERTADOR DE ÁUDIO (Crucial para Telemóvel)
+    function initAudio() {
+        if (audioInitialized) return;
+        const silentMsg = new SpeechSynthesisUtterance(" ");
+        window.speechSynthesis.speak(silentMsg);
+        audioInitialized = true;
+        if(current.text === undefined) nextPhrase();
     }
 
     function nextPhrase() {
-        currentPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-        document.getElementById('phrase-display').innerText = currentPhrase;
-        document.getElementById('status').innerText = "Ready!";
+        current = library[Math.floor(Math.random() * library.length)];
+        document.getElementById('cat-display').innerText = current.cat;
+        document.getElementById('phrase-display').innerText = current.text;
+        document.getElementById('status').innerText = "Ready to hear you!";
     }
 
     function playVoice() {
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(currentPhrase);
+        if (!current.text) return;
+        window.speechSynthesis.cancel(); // Limpa fila
+        const msg = new SpeechSynthesisUtterance(current.text);
         msg.lang = 'en-US';
+        msg.rate = 0.8; // Mais lento para ajudar
         window.speechSynthesis.speak(msg);
     }
 
     function startRecognition() {
-        if (!recognition) return alert("Browser not supported");
-        
-        const micBtn = document.getElementById('mic-btn');
-        const status = document.getElementById('status');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return alert("Browser not supported");
 
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        
         recognition.onstart = () => {
-            micBtn.classList.add('pulse');
-            status.innerText = "Listening...";
+            document.getElementById('status').innerText = "Listening... Speak!";
+            document.getElementById('mic-btn').style.opacity = "0.5";
         };
 
         recognition.onresult = (event) => {
-            micBtn.classList.remove('pulse');
-            const result = event.results[0][0].transcript.toLowerCase().trim();
-            const target = currentPhrase.toLowerCase().replace(/[?.!,]/g, "").trim();
+            const spoken = event.results[0][0].transcript.toLowerCase().trim();
+            const target = current.text.toLowerCase().replace(/[?.!,]/g, "").trim();
 
-            if (result.includes(target) || target.includes(result)) {
-                status.innerText = "🔥 PERFECT!";
+            if (spoken.includes(target) || target.includes(spoken)) {
+                document.getElementById('status').innerText = "🔥 Perfect! +10";
                 score += 10;
                 document.getElementById('points').innerText = score;
+                setTimeout(nextPhrase, 1500);
             } else {
-                status.innerText = `You said: "${result}"`;
+                document.getElementById('status').innerText = `You said: "${spoken}"`;
             }
         };
 
-        recognition.onerror = () => micBtn.classList.remove('pulse');
-        recognition.onend = () => micBtn.classList.remove('pulse');
+        recognition.onend = () => {
+            document.getElementById('mic-btn').style.opacity = "1";
+        };
 
         recognition.start();
     }
-
-    window.onload = nextPhrase;
 </script>
 </body>
 </html>
