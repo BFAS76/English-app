@@ -10,113 +10,132 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>">
     
     <style>
-        :root { --primary: #00f2fe; --bg: #0f172a; --card: #1e293b; }
+        :root { --primary: #00f2fe; --bg: #0f172a; --card: #1e293b; --text-sec: #94a3b8; }
         body { 
             font-family: system-ui, -apple-system, sans-serif; 
             background: var(--bg); color: white; margin: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+            overflow: hidden;
         }
         .container { width: 90%; max-width: 400px; background: var(--card); padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
-        .category { font-size: 0.8rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-        #phrase-display { font-size: 1.5rem; font-weight: bold; margin: 20px 0; min-height: 90px; color: #f8fafc; }
-        .controls { display: grid; gap: 15px; }
+        .category { font-size: 0.7rem; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        #phrase-display { font-size: 1.4rem; font-weight: bold; margin: 15px 0 5px 0; color: #f8fafc; line-height: 1.3; }
+        #translation-display { font-size: 1rem; color: var(--text-sec); font-style: italic; margin-bottom: 20px; min-height: 1.2em; }
+        .controls { display: grid; gap: 12px; }
         button { 
-            border: none; padding: 22px; border-radius: 18px; font-size: 1.1rem; font-weight: bold; cursor: pointer; 
-            transition: transform 0.1s; -webkit-tap-highlight-color: transparent;
+            border: none; padding: 18px; border-radius: 15px; font-size: 1.1rem; font-weight: bold; cursor: pointer; 
+            transition: 0.2s; -webkit-tap-highlight-color: transparent;
         }
-        button:active { transform: scale(0.95); }
-        .btn-listen { background: #334155; color: var(--primary); border: 2px solid var(--primary); }
+        button:active { transform: scale(0.96); }
+        .btn-listen { background: #334155; color: var(--primary); border: 1px solid var(--primary); }
         .btn-speak { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #0f172a; }
-        .btn-next { background: transparent; color: #94a3b8; text-decoration: underline; margin-top: 10px; }
-        #status { margin-top: 20px; font-size: 0.9rem; color: #94a3b8; min-height: 40px; }
-        .score { font-size: 1.2rem; margin-bottom: 10px; color: #4ade80; }
+        .btn-next { background: transparent; color: var(--text-sec); text-decoration: underline; font-size: 0.85rem; margin-top: 5px; }
+        #status { margin-top: 15px; font-size: 0.9rem; color: var(--text-sec); min-height: 3em; }
+        .points-box { color: #4ade80; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
-<body onclick="initAudio()"> <div class="container">
-    <div class="score">⭐ Points: <span id="points">0</span></div>
-    <div id="cat-display" class="category">Loading...</div>
-    <div id="phrase-display">Tap anywhere to start!</div>
+<body onclick="initAudio()">
+
+<div class="container">
+    <div class="points-box">XP: <span id="points">0</span></div>
+    <div id="cat-display" class="category">Tap to start</div>
+    <div id="phrase-display">Ready?</div>
+    <div id="translation-display">Clique para começar</div>
     
     <div class="controls">
         <button class="btn-listen" onclick="playVoice()">🔊 Hear Native</button>
-        <button id="mic-btn" class="btn-speak" onclick="startRecognition()">🎤 Press & Speak</button>
-        <button class="btn-next" onclick="nextPhrase()">Skip Phrase ➔</button>
+        <button id="mic-btn" class="btn-speak" onclick="startRecognition()">🎤 Speak Now</button>
+        <button class="btn-next" onclick="nextPhrase()">Skip / Next ➔</button>
     </div>
-    <div id="status">Make sure your volume is UP!</div>
+    <div id="status">Tip: Click "Hear Native" to learn the sound first!</div>
 </div>
 
 <script>
-    // 📚 CONTEÚDO EXPANDIDO
+    // 📚 BIBLIOTECA DE CONTEÚDO (Podes adicionar centenas aqui!)
     const library = [
-        { cat: "Greetings", text: "Nice to meet you" },
-        { cat: "Greetings", text: "How have you been lately?" },
-        { cat: "Travel", text: "Where is the international airport?" },
-        { cat: "Travel", text: "I would like a ticket to London" },
-        { cat: "Restaurant", text: "The bill, please" },
-        { cat: "Restaurant", text: "Do you have any vegetarian options?" },
-        { cat: "Daily Life", text: "What time do you usually wake up?" },
-        { cat: "Daily Life", text: "I need to go shopping today" },
-        { cat: "Inspiration", text: "Never stop dreaming" },
-        { cat: "Inspiration", text: "Believe in yourself" }
+        // SAUDAÇÕES
+        { cat: "Greetings", en: "Nice to meet you", pt: "Prazer em conhecê-lo" },
+        { cat: "Greetings", en: "How is it going?", pt: "Como estão as coisas?" },
+        { cat: "Greetings", en: "Have a wonderful day", pt: "Tenha um dia maravilhoso" },
+        
+        // VIAGEM
+        { cat: "Travel", en: "Where can I find a taxi?", pt: "Onde posso encontrar um táxi?" },
+        { cat: "Travel", en: "I am lost, can you help me?", pt: "Estou perdido, pode ajudar-me?" },
+        { cat: "Travel", en: "A table for two, please", pt: "Uma mesa para dois, por favor" },
+        
+        // TRABALHO / DIA-A-DIA
+        { cat: "Daily", en: "I need to check my emails", pt: "Preciso de ver os meus e-mails" },
+        { cat: "Daily", en: "What do you do for a living?", pt: "O que fazes da vida/profissionalmente?" },
+        { cat: "Daily", en: "Let's grab a coffee later", pt: "Vamos tomar um café mais tarde" },
+        
+        // FRASES ÚTEIS
+        { cat: "Useful", en: "Could you speak slower, please?", pt: "Poderia falar mais devagar, por favor?" },
+        { cat: "Useful", en: "I don't understand what you mean", pt: "Não entendo o que quer dizer" },
+        { cat: "Useful", en: "How do you say this in English?", pt: "Como se diz isto em Inglês?" }
     ];
 
     let current = {};
     let score = 0;
     let audioInitialized = false;
 
-    // 🔊 DESPERTADOR DE ÁUDIO (Crucial para Telemóvel)
     function initAudio() {
         if (audioInitialized) return;
-        const silentMsg = new SpeechSynthesisUtterance(" ");
-        window.speechSynthesis.speak(silentMsg);
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
         audioInitialized = true;
-        if(current.text === undefined) nextPhrase();
+        if(!current.en) nextPhrase();
     }
 
     function nextPhrase() {
-        current = library[Math.floor(Math.random() * library.length)];
+        let last = current.en;
+        while(current.en === last) {
+            current = library[Math.floor(Math.random() * library.length)];
+        }
         document.getElementById('cat-display').innerText = current.cat;
-        document.getElementById('phrase-display').innerText = current.text;
-        document.getElementById('status').innerText = "Ready to hear you!";
+        document.getElementById('phrase-display').innerText = current.en;
+        document.getElementById('translation-display').innerText = current.pt;
+        document.getElementById('status').innerText = "Listen and Repeat!";
+        document.getElementById('status').style.color = "#94a3b8";
     }
 
     function playVoice() {
-        if (!current.text) return;
-        window.speechSynthesis.cancel(); // Limpa fila
-        const msg = new SpeechSynthesisUtterance(current.text);
+        if (!current.en) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(current.en);
         msg.lang = 'en-US';
-        msg.rate = 0.8; // Mais lento para ajudar
+        msg.rate = 0.8;
         window.speechSynthesis.speak(msg);
     }
 
     function startRecognition() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return alert("Browser not supported");
+        if (!SpeechRecognition) return alert("Browser error");
 
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
         
         recognition.onstart = () => {
-            document.getElementById('status').innerText = "Listening... Speak!";
-            document.getElementById('mic-btn').style.opacity = "0.5";
+            document.getElementById('status').innerText = "Listening...";
+            document.getElementById('mic-btn').style.filter = "brightness(1.5)";
         };
 
         recognition.onresult = (event) => {
-            const spoken = event.results[0][0].transcript.toLowerCase().trim();
-            const target = current.text.toLowerCase().replace(/[?.!,]/g, "").trim();
+            const spoken = event.results[0][0].transcript.toLowerCase().trim().replace(/[?.!,]/g, "");
+            const target = current.en.toLowerCase().replace(/[?.!,]/g, "").trim();
 
-            if (spoken.includes(target) || target.includes(spoken)) {
-                document.getElementById('status').innerText = "🔥 Perfect! +10";
+            if (spoken === target || target.includes(spoken) && spoken.length > 3) {
+                document.getElementById('status').innerText = "✅ Excellent! +10 XP";
+                document.getElementById('status').style.color = "#4ade80";
                 score += 10;
                 document.getElementById('points').innerText = score;
-                setTimeout(nextPhrase, 1500);
+                setTimeout(nextPhrase, 2000);
             } else {
-                document.getElementById('status').innerText = `You said: "${spoken}"`;
+                document.getElementById('status').innerText = `You said: "${spoken}"\nTry again!`;
+                document.getElementById('status').style.color = "#fb7185";
             }
         };
 
         recognition.onend = () => {
-            document.getElementById('mic-btn').style.opacity = "1";
+            document.getElementById('mic-btn').style.filter = "none";
         };
 
         recognition.start();
