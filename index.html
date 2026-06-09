@@ -75,8 +75,9 @@
     ];
 
     let current = {};
-    let score = 0;
+    let score = parseInt(localStorage.getItem('xp') || '0', 10);
     let audioInitialized = false;
+    document.getElementById('points').innerText = score;
 
     function initAudio() {
         if (audioInitialized) return;
@@ -126,12 +127,18 @@
                 document.getElementById('status').innerText = "✅ Excellent! +10 XP";
                 document.getElementById('status').style.color = "#4ade80";
                 score += 10;
+                localStorage.setItem('xp', score);
                 document.getElementById('points').innerText = score;
                 setTimeout(nextPhrase, 2000);
             } else {
                 document.getElementById('status').innerText = `You said: "${spoken}"\nTry again!`;
                 document.getElementById('status').style.color = "#fb7185";
             }
+        };
+
+        recognition.onerror = (event) => {
+            document.getElementById('status').innerText = `Mic error: ${event.error}. Try again.`;
+            document.getElementById('status').style.color = "#fb7185";
         };
 
         recognition.onend = () => {
