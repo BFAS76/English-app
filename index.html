@@ -75,8 +75,8 @@
 </div>
 
 <script type="module">
-    import { initAudio, playVoice, startRecognition, nextPhrase, switchLanguage, switchLevel, loadFromCloud } from './app.js';
-    import { initFirebase, onAuthChange, signIn, signOutUser, getCurrentUser } from './firebase.js';
+    import { initAudio, playVoice, startRecognition, nextPhrase, switchLanguage, switchLevel, loadFromCloud, cloud } from './app.js';
+    import { initFirebase, onAuthChange, signIn, signOutUser, getCurrentUser, cloudSave, cloudLoad } from './firebase.js';
 
     // ----------------------------------------------------------------
     // Configuração Firebase — preenche com os teus valores
@@ -92,6 +92,10 @@
     };
 
     initFirebase(FIREBASE_CONFIG);
+
+    // Liga as funções cloud ao app.js (só após Firebase estar pronto)
+    cloud.save = cloudSave;
+    cloud.load = cloudLoad;
 
     onAuthChange(async (user) => {
         const btn = document.getElementById('auth-btn');

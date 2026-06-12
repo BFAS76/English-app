@@ -1,4 +1,5 @@
-import { cloudSave, cloudLoad } from './firebase.js';
+// Funções de cloud injetadas pelo index.html após inicializar o Firebase
+export const cloud = { save: null, load: null };
 
 export const library = [
     // A1 — Iniciante
@@ -122,11 +123,11 @@ export function saveProgress() {
     localStorage.setItem('englishAppScore', String(state.score));
     localStorage.setItem('englishAppLanguage', state.language);
     localStorage.setItem('englishAppLevel', state.level);
-    cloudSave({ score: state.score, language: state.language, level: state.level });
+    cloud.save?.({ score: state.score, language: state.language, level: state.level });
 }
 
 export async function loadFromCloud() {
-    const data = await cloudLoad();
+    const data = await cloud.load?.();
     if (!data) return;
     if (data.score > state.score) {
         state.score = data.score;

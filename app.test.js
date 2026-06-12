@@ -1,18 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('./firebase.js', () => ({
-    cloudSave: vi.fn().mockResolvedValue(undefined),
-    cloudLoad: vi.fn().mockResolvedValue(null),
-    initFirebase: vi.fn(),
-    isReady: vi.fn().mockReturnValue(false),
-    getCurrentUser: vi.fn().mockReturnValue(null),
-    onAuthChange: vi.fn(),
-    signIn: vi.fn(),
-    signOutUser: vi.fn(),
-}));
-
-import { cloudSave, cloudLoad } from './firebase.js';
-
 import {
     normalizeText,
     checkMatch,
@@ -25,6 +12,7 @@ import {
     library,
     LANGUAGES,
     LEVELS,
+    cloud,
     state,
     resetState,
     saveProgress,
@@ -574,32 +562,43 @@ describe('integração save/load', () => {
 });
 
 // ---------------------------------------------------------------------------
-// saveProgress — Firebase
+// saveProgress — cloud.save
 // ---------------------------------------------------------------------------
-describe('saveProgress com Firebase', () => {
+describe('saveProgress com cloud.save', () => {
     beforeEach(() => {
-        vi.mocked(cloudSave).mockClear();
+        cloud.save = vi.fn();
+        cloud.load = null;
     });
 
-    it('chama cloudSave com score, língua e nível corretos', () => {
+    afterEach(() => {
+        cloud.save = null;
+        cloud.load = null;
+    });
+
+    it('chama cloud.save com score, língua e nível corretos', () => {
         state.score = 30;
         state.language = 'de';
         state.level = 'B1';
         saveProgress();
-        expect(cloudSave).toHaveBeenCalledWith({ score: 30, language: 'de', level: 'B1' });
+        expect(cloud.save).toHaveBeenCalledWith({ score: 30, language: 'de', level: 'B1' });
     });
 
-    it('chama cloudSave mesmo com score zero', () => {
+    it('chama cloud.save mesmo com score zero', () => {
         saveProgress();
-        expect(cloudSave).toHaveBeenCalledWith({ score: 0, language: 'en', level: 'A1' });
+        expect(cloud.save).toHaveBeenCalledWith({ score: 0, language: 'en', level: 'A1' });
     });
 
-    it('chama cloudSave sempre que o score muda', () => {
+    it('chama cloud.save após resposta correta', () => {
         state.current = library.find(p => p.en === 'Nice to meet you');
         vi.useFakeTimers();
         handleRecognitionResult('Nice to meet you');
         vi.useRealTimers();
-        expect(cloudSave).toHaveBeenCalledWith(expect.objectContaining({ score: 10 }));
+        expect(cloud.save).toHaveBeenCalledWith(expect.objectContaining({ score: 10 }));
+    });
+
+    it('não lança erro se cloud.save for null', () => {
+        cloud.save = null;
+        expect(() => saveProgress()).not.toThrow();
     });
 });
 
@@ -608,12 +607,16 @@ describe('saveProgress com Firebase', () => {
 // ---------------------------------------------------------------------------
 describe('loadFromCloud', () => {
     beforeEach(() => {
-        vi.mocked(cloudLoad).mockClear();
+        cloud.load = vi.fn().mockResolvedValue(null);
+    });
+
+    afterEach(() => {
+        cloud.load = null;
     });
 
     it('atualiza o score se Firebase tem valor maior', async () => {
         state.score = 10;
-        vi.mocked(cloudLoad).mockResolvedValueOnce({ score: 50, language: 'en', level: 'A1' });
+        cloud.load.mockResolvedValueOnce({ score: 50, language: 'en', level: 'A1' });
         await loadFromCloud();
         expect(state.score).toBe(50);
         expect(document.getElementById('points').innerText).toBe('50');
@@ -621,34 +624,40 @@ describe('loadFromCloud', () => {
 
     it('não altera o score se Firebase tem valor menor', async () => {
         state.score = 80;
-        vi.mocked(cloudLoad).mockResolvedValueOnce({ score: 30, language: 'en', level: 'A1' });
+        cloud.load.mockResolvedValueOnce({ score: 30, language: 'en', level: 'A1' });
         await loadFromCloud();
         expect(state.score).toBe(80);
     });
 
-    it('não faz nada se Firebase devolver null', async () => {
+    it('não faz nada se cloud.load devolver null', async () => {
         state.score = 20;
-        vi.mocked(cloudLoad).mockResolvedValueOnce(null);
+        await loadFromCloud();
+        expect(state.score).toBe(20);
+    });
+
+    it('não faz nada se cloud.load for null', async () => {
+        cloud.load = null;
+        state.score = 20;
         await loadFromCloud();
         expect(state.score).toBe(20);
     });
 
     it('restaura língua e nível do Firebase', async () => {
-        vi.mocked(cloudLoad).mockResolvedValueOnce({ score: 0, language: 'de', level: 'B1' });
+        cloud.load.mockResolvedValueOnce({ score: 0, language: 'de', level: 'B1' });
         await loadFromCloud();
         expect(state.language).toBe('de');
         expect(state.level).toBe('B1');
     });
 
     it('ignora língua inválida vinda do Firebase', async () => {
-        vi.mocked(cloudLoad).mockResolvedValueOnce({ score: 0, language: 'fr', level: 'A1' });
+        cloud.load.mockResolvedValueOnce({ score: 0, language: 'fr', level: 'A1' });
         await loadFromCloud();
         expect(state.language).toBe('en');
     });
 
     it('sincroniza score para o localStorage após carregar do Firebase', async () => {
         state.score = 0;
-        vi.mocked(cloudLoad).mockResolvedValueOnce({ score: 60, language: 'en', level: 'A1' });
+        cloud.load.mockResolvedValueOnce({ score: 60, language: 'en', level: 'A1' });
         await loadFromCloud();
         expect(localStorage.getItem('englishAppScore')).toBe('60');
     });
