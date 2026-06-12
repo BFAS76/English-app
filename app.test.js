@@ -3,7 +3,14 @@ import {
     normalizeText,
     checkMatch,
     pickNextPhrase,
+    getLangCode,
+    updateLanguageUI,
+    updateLevelUI,
+    switchLanguage,
+    switchLevel,
     library,
+    LANGUAGES,
+    LEVELS,
     state,
     resetState,
     saveProgress,
@@ -24,6 +31,11 @@ const DOM_TEMPLATE = `
     <button id="mic-btn"></button>
     <button class="btn-next"></button>
     <div id="status"></div>
+    <button class="btn-lang active" data-lang="en"></button>
+    <button class="btn-lang" data-lang="de"></button>
+    <button class="btn-level active" data-level="A1"></button>
+    <button class="btn-level" data-level="A2"></button>
+    <button class="btn-level" data-level="B1"></button>
 `;
 
 beforeEach(() => {
@@ -89,8 +101,12 @@ describe('checkMatch', () => {
     });
 
     it('rejeita quando o dito contém a frase alvo mas não o contrário', () => {
-        // "nice to meet you really" NÃO está contida em "nice to meet you"
         expect(checkMatch('nice to meet you really', 'nice to meet you')).toBe(false);
+    });
+
+    it('funciona com frases em alemão', () => {
+        expect(checkMatch('Guten Morgen', 'Guten Morgen')).toBe(true);
+        expect(checkMatch('guten morgen', 'Guten Morgen')).toBe(true);
     });
 });
 
@@ -115,7 +131,7 @@ describe('pickNextPhrase', () => {
     });
 
     it('devolve o único item quando biblioteca tem 1 frase', () => {
-        const single = [{ cat: "Test", en: "Hello", pt: "Olá" }];
+        const single = [{ level: "A1", cat: "Test", en: "Hello", de: "Hallo", pt: "Olá" }];
         expect(pickNextPhrase(single, null)).toEqual(single[0]);
     });
 
@@ -126,8 +142,113 @@ describe('pickNextPhrase', () => {
     });
 
     it('devolve a única frase mesmo que seja a atual (biblioteca de 1 item)', () => {
-        const single = [{ cat: "Test", en: "Hello", pt: "Olá" }];
+        const single = [{ level: "A1", cat: "Test", en: "Hello", de: "Hallo", pt: "Olá" }];
         expect(pickNextPhrase(single, "Hello")).toEqual(single[0]);
+    });
+
+    it('filtra frases pelo nível especificado', () => {
+        for (let i = 0; i < 20; i++) {
+            expect(pickNextPhrase(library, null, 'B1').level).toBe('B1');
+        }
+    });
+
+    it('devolve null quando nenhuma frase corresponde ao nível', () => {
+        expect(pickNextPhrase(library, null, 'C2')).toBeNull();
+    });
+
+    it('sem filtro de nível devolve frases de qualquer nível', () => {
+        const levels = new Set();
+        for (let i = 0; i < 50; i++) {
+            levels.add(pickNextPhrase(library, null).level);
+        }
+        expect(levels.size).toBeGreaterThan(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getLangCode
+// ---------------------------------------------------------------------------
+describe('getLangCode', () => {
+    it('devolve en-US para inglês', () => {
+        state.language = 'en';
+        expect(getLangCode()).toBe('en-US');
+    });
+
+    it('devolve de-DE para alemão', () => {
+        state.language = 'de';
+        expect(getLangCode()).toBe('de-DE');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// switchLanguage
+// ---------------------------------------------------------------------------
+describe('switchLanguage', () => {
+    beforeEach(() => {
+        state.current = library.find(p => p.en === 'Good morning');
+    });
+
+    it('muda o state.language', () => {
+        switchLanguage('de');
+        expect(state.language).toBe('de');
+    });
+
+    it('atualiza o DOM com a frase na nova língua', () => {
+        switchLanguage('de');
+        expect(document.getElementById('phrase-display').innerText).toBe('Guten Morgen');
+    });
+
+    it('volta para inglês corretamente', () => {
+        switchLanguage('de');
+        switchLanguage('en');
+        expect(document.getElementById('phrase-display').innerText).toBe('Good morning');
+    });
+
+    it('marca o botão correto como active', () => {
+        switchLanguage('de');
+        expect(document.querySelector('[data-lang="de"]').classList.contains('active')).toBe(true);
+        expect(document.querySelector('[data-lang="en"]').classList.contains('active')).toBe(false);
+    });
+
+    it('ignora língua inválida', () => {
+        switchLanguage('fr');
+        expect(state.language).toBe('en');
+    });
+
+    it('guarda a preferência no localStorage', () => {
+        switchLanguage('de');
+        expect(localStorage.getItem('englishAppLanguage')).toBe('de');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// switchLevel
+// ---------------------------------------------------------------------------
+describe('switchLevel', () => {
+    it('muda o state.level', () => {
+        switchLevel('A2');
+        expect(state.level).toBe('A2');
+    });
+
+    it('carrega uma nova frase do nível selecionado', () => {
+        switchLevel('B1');
+        expect(state.current.level).toBe('B1');
+    });
+
+    it('marca o botão correto como active', () => {
+        switchLevel('A2');
+        expect(document.querySelector('[data-level="A2"]').classList.contains('active')).toBe(true);
+        expect(document.querySelector('[data-level="A1"]').classList.contains('active')).toBe(false);
+    });
+
+    it('ignora nível inválido', () => {
+        switchLevel('C1');
+        expect(state.level).toBe('A1');
+    });
+
+    it('guarda a preferência no localStorage', () => {
+        switchLevel('B1');
+        expect(localStorage.getItem('englishAppLevel')).toBe('B1');
     });
 });
 
@@ -181,13 +302,29 @@ describe('playVoice', () => {
         expect(window.speechSynthesis.speak).toHaveBeenCalledTimes(1);
     });
 
-    it('usa idioma en-US e velocidade 0.8', () => {
+    it('usa idioma en-US e velocidade 0.8 para inglês', () => {
         state.current = library[0];
         const utterance = { lang: '', rate: 0 };
         vi.mocked(SpeechSynthesisUtterance).mockReturnValueOnce(utterance);
         playVoice();
         expect(utterance.lang).toBe('en-US');
         expect(utterance.rate).toBe(0.8);
+    });
+
+    it('usa idioma de-DE para alemão', () => {
+        state.current = library[0];
+        state.language = 'de';
+        const utterance = { lang: '', rate: 0 };
+        vi.mocked(SpeechSynthesisUtterance).mockReturnValueOnce(utterance);
+        playVoice();
+        expect(utterance.lang).toBe('de-DE');
+    });
+
+    it('fala a frase alemã quando idioma é DE', () => {
+        state.current = library.find(p => p.en === 'Good morning');
+        state.language = 'de';
+        playVoice();
+        expect(vi.mocked(SpeechSynthesisUtterance)).toHaveBeenCalledWith('Guten Morgen');
     });
 });
 
@@ -196,7 +333,7 @@ describe('playVoice', () => {
 // ---------------------------------------------------------------------------
 describe('handleRecognitionResult', () => {
     beforeEach(() => {
-        state.current = { cat: "Greetings", en: "Nice to meet you", pt: "Prazer em conhecê-lo" };
+        state.current = library.find(p => p.en === 'Nice to meet you');
         vi.useFakeTimers();
     });
 
@@ -204,9 +341,8 @@ describe('handleRecognitionResult', () => {
         vi.useRealTimers();
     });
 
-    it('devolve true e atribui +10 XP numa resposta correta', () => {
-        const result = handleRecognitionResult('Nice to meet you');
-        expect(result).toBe(true);
+    it('devolve true e atribui +10 XP numa resposta correta (EN)', () => {
+        expect(handleRecognitionResult('Nice to meet you')).toBe(true);
         expect(state.score).toBe(10);
     });
 
@@ -217,14 +353,13 @@ describe('handleRecognitionResult', () => {
 
     it('acumula pontos em respostas corretas consecutivas', () => {
         handleRecognitionResult('Nice to meet you');
-        state.current = { cat: "Greetings", en: "How is it going?", pt: "Como estão as coisas?" };
+        state.current = library.find(p => p.en === 'How is it going?');
         handleRecognitionResult('How is it going');
         expect(state.score).toBe(20);
     });
 
     it('devolve false e não altera score numa resposta errada', () => {
-        const result = handleRecognitionResult('goodbye everyone');
-        expect(result).toBe(false);
+        expect(handleRecognitionResult('goodbye everyone')).toBe(false);
         expect(state.score).toBe(0);
     });
 
@@ -245,6 +380,18 @@ describe('handleRecognitionResult', () => {
         const previousPhrase = state.current.en;
         vi.advanceTimersByTime(2000);
         expect(state.current.en).toBe(previousPhrase);
+    });
+
+    it('avalia frase alemã corretamente quando idioma é DE', () => {
+        state.current = library.find(p => p.en === 'Good morning');
+        state.language = 'de';
+        expect(handleRecognitionResult('Guten Morgen')).toBe(true);
+    });
+
+    it('rejeita frase inglesa quando idioma esperado é DE', () => {
+        state.current = library.find(p => p.en === 'Good morning');
+        state.language = 'de';
+        expect(handleRecognitionResult('Good morning')).toBe(false);
     });
 });
 
@@ -272,11 +419,19 @@ describe('startRecognition', () => {
         expect(mockStart).toHaveBeenCalled();
     });
 
-    it('define o idioma como en-US', () => {
+    it('define o idioma como en-US quando língua é EN', () => {
         const mockRecognition = { lang: '', start: vi.fn(), onstart: null, onresult: null, onend: null };
         vi.stubGlobal('SpeechRecognition', vi.fn().mockReturnValue(mockRecognition));
         startRecognition();
         expect(mockRecognition.lang).toBe('en-US');
+    });
+
+    it('define o idioma como de-DE quando língua é DE', () => {
+        state.language = 'de';
+        const mockRecognition = { lang: '', start: vi.fn(), onstart: null, onresult: null, onend: null };
+        vi.stubGlobal('SpeechRecognition', vi.fn().mockReturnValue(mockRecognition));
+        startRecognition();
+        expect(mockRecognition.lang).toBe('de-DE');
     });
 
     it('onstart atualiza o status para "Listening..."', () => {
@@ -319,6 +474,18 @@ describe('saveProgress', () => {
         saveProgress();
         expect(localStorage.getItem('englishAppScore')).toBe('80');
     });
+
+    it('guarda a língua atual', () => {
+        state.language = 'de';
+        saveProgress();
+        expect(localStorage.getItem('englishAppLanguage')).toBe('de');
+    });
+
+    it('guarda o nível atual', () => {
+        state.level = 'B1';
+        saveProgress();
+        expect(localStorage.getItem('englishAppLevel')).toBe('B1');
+    });
 });
 
 describe('loadProgress', () => {
@@ -344,21 +511,49 @@ describe('loadProgress', () => {
         loadProgress();
         expect(state.score).toBe(0);
     });
+
+    it('restaura a língua do localStorage', () => {
+        localStorage.setItem('englishAppLanguage', 'de');
+        loadProgress();
+        expect(state.language).toBe('de');
+    });
+
+    it('restaura o nível do localStorage', () => {
+        localStorage.setItem('englishAppLevel', 'B1');
+        loadProgress();
+        expect(state.level).toBe('B1');
+    });
+
+    it('ignora língua inválida no localStorage', () => {
+        localStorage.setItem('englishAppLanguage', 'fr');
+        loadProgress();
+        expect(state.language).toBe('en');
+    });
+
+    it('ignora nível inválido no localStorage', () => {
+        localStorage.setItem('englishAppLevel', 'C2');
+        loadProgress();
+        expect(state.level).toBe('A1');
+    });
 });
 
 describe('integração save/load', () => {
-    it('score mantém-se após simular fechar e reabrir a app', () => {
-        state.current = { cat: "Greetings", en: "Nice to meet you", pt: "Prazer em conhecê-lo" };
+    it('score, língua e nível mantêm-se após simular fechar e reabrir a app', () => {
+        state.current = library.find(p => p.en === 'Nice to meet you');
+        state.language = 'de';
+        state.level = 'A2';
         vi.useFakeTimers();
-        handleRecognitionResult('Nice to meet you');
+        handleRecognitionResult('Schön, Sie kennenzulernen');
         vi.useRealTimers();
 
-        // simula "fechar a app": reset do state em memória
         resetState();
         expect(state.score).toBe(0);
+        expect(state.language).toBe('en');
+        expect(state.level).toBe('A1');
 
-        // simula "reabrir a app": carrega do localStorage
         loadProgress();
         expect(state.score).toBe(10);
+        expect(state.language).toBe('de');
+        expect(state.level).toBe('A2');
     });
 });

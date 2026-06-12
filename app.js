@@ -1,28 +1,56 @@
 export const library = [
-    { cat: "Greetings", en: "Nice to meet you", pt: "Prazer em conhecê-lo" },
-    { cat: "Greetings", en: "How is it going?", pt: "Como estão as coisas?" },
-    { cat: "Greetings", en: "Have a wonderful day", pt: "Tenha um dia maravilhoso" },
-    { cat: "Travel", en: "Where can I find a taxi?", pt: "Onde posso encontrar um táxi?" },
-    { cat: "Travel", en: "I am lost, can you help me?", pt: "Estou perdido, pode ajudar-me?" },
-    { cat: "Travel", en: "A table for two, please", pt: "Uma mesa para dois, por favor" },
-    { cat: "Daily", en: "I need to check my emails", pt: "Preciso de ver os meus e-mails" },
-    { cat: "Daily", en: "What do you do for a living?", pt: "O que fazes da vida/profissionalmente?" },
-    { cat: "Daily", en: "Let's grab a coffee later", pt: "Vamos tomar um café mais tarde" },
-    { cat: "Useful", en: "Could you speak slower, please?", pt: "Poderia falar mais devagar, por favor?" },
-    { cat: "Useful", en: "I don't understand what you mean", pt: "Não entendo o que quer dizer" },
-    { cat: "Useful", en: "How do you say this in English?", pt: "Como se diz isto em Inglês?" },
+    // A1 — Iniciante
+    { level: "A1", cat: "Greetings", en: "Good morning",               de: "Guten Morgen",                         pt: "Bom dia" },
+    { level: "A1", cat: "Greetings", en: "Nice to meet you",            de: "Schön, Sie kennenzulernen",             pt: "Prazer em conhecê-lo" },
+    { level: "A1", cat: "Greetings", en: "Thank you very much",         de: "Vielen Dank",                          pt: "Muito obrigado" },
+    { level: "A1", cat: "Greetings", en: "Good night",                  de: "Gute Nacht",                           pt: "Boa noite" },
+    { level: "A1", cat: "Useful",   en: "I don't understand",           de: "Ich verstehe nicht",                   pt: "Não entendo" },
+    { level: "A1", cat: "Useful",   en: "Can you help me?",             de: "Können Sie mir helfen?",               pt: "Pode ajudar-me?" },
+    { level: "A1", cat: "Useful",   en: "How much does it cost?",       de: "Wie viel kostet das?",                 pt: "Quanto custa?" },
+    { level: "A1", cat: "Travel",   en: "Where is the bathroom?",       de: "Wo ist die Toilette?",                 pt: "Onde é a casa de banho?" },
+
+    // A2 — Elementar
+    { level: "A2", cat: "Greetings", en: "How is it going?",            de: "Wie läuft es?",                        pt: "Como estão as coisas?" },
+    { level: "A2", cat: "Greetings", en: "Have a wonderful day",        de: "Haben Sie einen wunderschönen Tag",    pt: "Tenha um dia maravilhoso" },
+    { level: "A2", cat: "Travel",   en: "Where can I find a taxi?",     de: "Wo finde ich ein Taxi?",               pt: "Onde posso encontrar um táxi?" },
+    { level: "A2", cat: "Travel",   en: "I am lost, can you help me?",  de: "Ich habe mich verirrt, können Sie mir helfen?", pt: "Estou perdido, pode ajudar-me?" },
+    { level: "A2", cat: "Travel",   en: "A table for two, please",      de: "Einen Tisch für zwei, bitte",          pt: "Uma mesa para dois, por favor" },
+    { level: "A2", cat: "Useful",   en: "Could you speak slower, please?", de: "Könnten Sie bitte langsamer sprechen?", pt: "Poderia falar mais devagar, por favor?" },
+    { level: "A2", cat: "Daily",    en: "What time does it open?",      de: "Wann öffnet es?",                      pt: "A que horas abre?" },
+    { level: "A2", cat: "Daily",    en: "I would like a coffee, please", de: "Ich hätte gerne einen Kaffee, bitte", pt: "Queria um café, por favor" },
+
+    // B1 — Intermédio
+    { level: "B1", cat: "Daily",    en: "I need to check my emails",    de: "Ich muss meine E-Mails checken",       pt: "Preciso de ver os meus e-mails" },
+    { level: "B1", cat: "Daily",    en: "What do you do for a living?", de: "Was machen Sie beruflich?",            pt: "O que fazes da vida?" },
+    { level: "B1", cat: "Daily",    en: "Let's grab a coffee later",    de: "Lass uns später einen Kaffee trinken", pt: "Vamos tomar um café mais tarde" },
+    { level: "B1", cat: "Useful",   en: "I don't understand what you mean", de: "Ich verstehe nicht, was Sie meinen", pt: "Não entendo o que quer dizer" },
+    { level: "B1", cat: "Useful",   en: "How do you say this in English?", de: "Wie sagt man das auf Deutsch?",     pt: "Como se diz isto em Inglês?" },
+    { level: "B1", cat: "Daily",    en: "I have been living here for two years", de: "Ich wohne hier seit zwei Jahren", pt: "Vivo aqui há dois anos" },
+    { level: "B1", cat: "Travel",   en: "Could you recommend a good restaurant?", de: "Könnten Sie mir ein gutes Restaurant empfehlen?", pt: "Pode recomendar um bom restaurante?" },
+    { level: "B1", cat: "Daily",    en: "I am interested in learning new languages", de: "Ich interessiere mich dafür, neue Sprachen zu lernen", pt: "Tenho interesse em aprender novas línguas" },
 ];
+
+export const LANGUAGES = ['en', 'de'];
+export const LEVELS = ['A1', 'A2', 'B1'];
 
 export const state = {
     current: {},
     score: 0,
     audioInitialized: false,
+    language: 'en',
+    level: 'A1',
 };
 
 export function resetState() {
     state.current = {};
     state.score = 0;
     state.audioInitialized = false;
+    state.language = 'en';
+    state.level = 'A1';
+}
+
+export function getLangCode() {
+    return state.language === 'de' ? 'de-DE' : 'en-US';
 }
 
 export function normalizeText(text) {
@@ -35,36 +63,81 @@ export function checkMatch(spoken, target) {
     return s === t || (t.includes(s) && s.length > 3);
 }
 
-export function pickNextPhrase(lib, currentEn) {
-    if (lib.length === 0) return null;
-    if (lib.length === 1) return lib[0];
+export function pickNextPhrase(lib, currentEn, level = null) {
+    const pool = level ? lib.filter(p => p.level === level) : lib;
+    if (pool.length === 0) return null;
+    if (pool.length === 1) return pool[0];
     let phrase;
     do {
-        phrase = lib[Math.floor(Math.random() * lib.length)];
+        phrase = pool[Math.floor(Math.random() * pool.length)];
     } while (phrase.en === currentEn);
     return phrase;
 }
 
+export function updateLanguageUI() {
+    document.querySelectorAll('[data-lang]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === state.language);
+    });
+}
+
+export function updateLevelUI() {
+    document.querySelectorAll('[data-level]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.level === state.level);
+    });
+}
+
 export function nextPhrase() {
-    state.current = pickNextPhrase(library, state.current.en);
-    document.getElementById('cat-display').innerText = state.current.cat;
-    document.getElementById('phrase-display').innerText = state.current.en;
+    const phrase = pickNextPhrase(library, state.current.en, state.level);
+    if (!phrase) return;
+    state.current = phrase;
+    document.getElementById('cat-display').innerText = `${state.current.cat} · ${state.current.level}`;
+    document.getElementById('phrase-display').innerText = state.current[state.language];
     document.getElementById('translation-display').innerText = state.current.pt;
     const status = document.getElementById('status');
     status.innerText = "Listen and Repeat!";
     status.style.color = "#94a3b8";
 }
 
+export function switchLanguage(lang) {
+    if (!LANGUAGES.includes(lang)) return;
+    state.language = lang;
+    if (state.current[lang]) {
+        document.getElementById('phrase-display').innerText = state.current[lang];
+    }
+    updateLanguageUI();
+    saveProgress();
+}
+
+export function switchLevel(level) {
+    if (!LEVELS.includes(level)) return;
+    state.level = level;
+    updateLevelUI();
+    saveProgress();
+    nextPhrase();
+}
+
 export function saveProgress() {
     localStorage.setItem('englishAppScore', String(state.score));
+    localStorage.setItem('englishAppLanguage', state.language);
+    localStorage.setItem('englishAppLevel', state.level);
 }
 
 export function loadProgress() {
-    const saved = localStorage.getItem('englishAppScore');
-    if (saved === null) return;
-    const parsed = parseInt(saved, 10);
-    state.score = isNaN(parsed) ? 0 : parsed;
-    document.getElementById('points').innerText = String(state.score);
+    const savedScore = localStorage.getItem('englishAppScore');
+    if (savedScore !== null) {
+        const parsed = parseInt(savedScore, 10);
+        state.score = isNaN(parsed) ? 0 : parsed;
+        document.getElementById('points').innerText = String(state.score);
+    }
+
+    const savedLang = localStorage.getItem('englishAppLanguage');
+    if (savedLang && LANGUAGES.includes(savedLang)) state.language = savedLang;
+
+    const savedLevel = localStorage.getItem('englishAppLevel');
+    if (savedLevel && LEVELS.includes(savedLevel)) state.level = savedLevel;
+
+    updateLanguageUI();
+    updateLevelUI();
 }
 
 export function initAudio() {
@@ -78,15 +151,15 @@ export function initAudio() {
 export function playVoice() {
     if (!state.current.en) return;
     window.speechSynthesis.cancel();
-    const msg = new SpeechSynthesisUtterance(state.current.en);
-    msg.lang = 'en-US';
+    const msg = new SpeechSynthesisUtterance(state.current[state.language]);
+    msg.lang = getLangCode();
     msg.rate = 0.8;
     window.speechSynthesis.speak(msg);
 }
 
 export function handleRecognitionResult(transcript) {
     const spoken = normalizeText(transcript);
-    const target = normalizeText(state.current.en);
+    const target = normalizeText(state.current[state.language]);
     const status = document.getElementById('status');
 
     if (checkMatch(spoken, target)) {
@@ -111,7 +184,7 @@ export function startRecognition() {
         return;
     }
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
+    recognition.lang = getLangCode();
 
     recognition.onstart = () => {
         document.getElementById('status').innerText = "Listening...";
