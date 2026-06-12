@@ -34,7 +34,7 @@
         .points-box { color: #4ade80; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
-<body onclick="initAudio()">
+<body>
 
 <div class="container">
     <div class="points-box">XP: <span id="points">0</span></div>
@@ -43,103 +43,20 @@
     <div id="translation-display">Clique para começar</div>
     
     <div class="controls">
-        <button class="btn-listen" onclick="playVoice()">🔊 Hear Native</button>
-        <button id="mic-btn" class="btn-speak" onclick="startRecognition()">🎤 Speak Now</button>
-        <button class="btn-next" onclick="nextPhrase()">Skip / Next ➔</button>
+        <button class="btn-listen">🔊 Hear Native</button>
+        <button id="mic-btn" class="btn-speak">🎤 Speak Now</button>
+        <button class="btn-next">Skip / Next ➔</button>
     </div>
     <div id="status">Tip: Click "Hear Native" to learn the sound first!</div>
 </div>
 
-<script>
-    // 📚 BIBLIOTECA DE CONTEÚDO (Podes adicionar centenas aqui!)
-    const library = [
-        // SAUDAÇÕES
-        { cat: "Greetings", en: "Nice to meet you", pt: "Prazer em conhecê-lo" },
-        { cat: "Greetings", en: "How is it going?", pt: "Como estão as coisas?" },
-        { cat: "Greetings", en: "Have a wonderful day", pt: "Tenha um dia maravilhoso" },
-        
-        // VIAGEM
-        { cat: "Travel", en: "Where can I find a taxi?", pt: "Onde posso encontrar um táxi?" },
-        { cat: "Travel", en: "I am lost, can you help me?", pt: "Estou perdido, pode ajudar-me?" },
-        { cat: "Travel", en: "A table for two, please", pt: "Uma mesa para dois, por favor" },
-        
-        // TRABALHO / DIA-A-DIA
-        { cat: "Daily", en: "I need to check my emails", pt: "Preciso de ver os meus e-mails" },
-        { cat: "Daily", en: "What do you do for a living?", pt: "O que fazes da vida/profissionalmente?" },
-        { cat: "Daily", en: "Let's grab a coffee later", pt: "Vamos tomar um café mais tarde" },
-        
-        // FRASES ÚTEIS
-        { cat: "Useful", en: "Could you speak slower, please?", pt: "Poderia falar mais devagar, por favor?" },
-        { cat: "Useful", en: "I don't understand what you mean", pt: "Não entendo o que quer dizer" },
-        { cat: "Useful", en: "How do you say this in English?", pt: "Como se diz isto em Inglês?" }
-    ];
+<script type="module">
+    import { initAudio, playVoice, startRecognition, nextPhrase } from './app.js';
 
-    let current = {};
-    let score = 0;
-    let audioInitialized = false;
-
-    function initAudio() {
-        if (audioInitialized) return;
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
-        audioInitialized = true;
-        if(!current.en) nextPhrase();
-    }
-
-    function nextPhrase() {
-        let last = current.en;
-        while(current.en === last) {
-            current = library[Math.floor(Math.random() * library.length)];
-        }
-        document.getElementById('cat-display').innerText = current.cat;
-        document.getElementById('phrase-display').innerText = current.en;
-        document.getElementById('translation-display').innerText = current.pt;
-        document.getElementById('status').innerText = "Listen and Repeat!";
-        document.getElementById('status').style.color = "#94a3b8";
-    }
-
-    function playVoice() {
-        if (!current.en) return;
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(current.en);
-        msg.lang = 'en-US';
-        msg.rate = 0.8;
-        window.speechSynthesis.speak(msg);
-    }
-
-    function startRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return alert("Browser error");
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        
-        recognition.onstart = () => {
-            document.getElementById('status').innerText = "Listening...";
-            document.getElementById('mic-btn').style.filter = "brightness(1.5)";
-        };
-
-        recognition.onresult = (event) => {
-            const spoken = event.results[0][0].transcript.toLowerCase().trim().replace(/[?.!,]/g, "");
-            const target = current.en.toLowerCase().replace(/[?.!,]/g, "").trim();
-
-            if (spoken === target || target.includes(spoken) && spoken.length > 3) {
-                document.getElementById('status').innerText = "✅ Excellent! +10 XP";
-                document.getElementById('status').style.color = "#4ade80";
-                score += 10;
-                document.getElementById('points').innerText = score;
-                setTimeout(nextPhrase, 2000);
-            } else {
-                document.getElementById('status').innerText = `You said: "${spoken}"\nTry again!`;
-                document.getElementById('status').style.color = "#fb7185";
-            }
-        };
-
-        recognition.onend = () => {
-            document.getElementById('mic-btn').style.filter = "none";
-        };
-
-        recognition.start();
-    }
+    document.body.addEventListener('click', initAudio);
+    document.querySelector('.btn-listen').addEventListener('click', playVoice);
+    document.getElementById('mic-btn').addEventListener('click', startRecognition);
+    document.querySelector('.btn-next').addEventListener('click', nextPhrase);
 </script>
 </body>
 </html>
