@@ -55,10 +55,23 @@ export function nextPhrase() {
     status.style.color = "#94a3b8";
 }
 
+export function saveProgress() {
+    localStorage.setItem('englishAppScore', String(state.score));
+}
+
+export function loadProgress() {
+    const saved = localStorage.getItem('englishAppScore');
+    if (saved === null) return;
+    const parsed = parseInt(saved, 10);
+    state.score = isNaN(parsed) ? 0 : parsed;
+    document.getElementById('points').innerText = String(state.score);
+}
+
 export function initAudio() {
     if (state.audioInitialized) return;
     window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
     state.audioInitialized = true;
+    loadProgress();
     if (!state.current.en) nextPhrase();
 }
 
@@ -81,6 +94,7 @@ export function handleRecognitionResult(transcript) {
         status.style.color = "#4ade80";
         state.score += 10;
         document.getElementById('points').innerText = String(state.score);
+        saveProgress();
         setTimeout(nextPhrase, 2000);
         return true;
     } else {

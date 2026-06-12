@@ -6,6 +6,8 @@ import {
     library,
     state,
     resetState,
+    saveProgress,
+    loadProgress,
     initAudio,
     playVoice,
     nextPhrase,
@@ -26,6 +28,7 @@ const DOM_TEMPLATE = `
 
 beforeEach(() => {
     document.body.innerHTML = DOM_TEMPLATE;
+    localStorage.clear();
     vi.stubGlobal('SpeechSynthesisUtterance', vi.fn().mockImplementation((text) => ({ text })));
     vi.stubGlobal('speechSynthesis', { speak: vi.fn(), cancel: vi.fn() });
     resetState();
@@ -291,5 +294,71 @@ describe('startRecognition', () => {
         startRecognition();
         mockRecognition.onend();
         expect(document.getElementById('mic-btn').style.filter).toBe('none');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// saveProgress / loadProgress
+// ---------------------------------------------------------------------------
+describe('saveProgress', () => {
+    it('guarda o score atual no localStorage', () => {
+        state.score = 50;
+        saveProgress();
+        expect(localStorage.getItem('englishAppScore')).toBe('50');
+    });
+
+    it('guarda zero quando o score é 0', () => {
+        saveProgress();
+        expect(localStorage.getItem('englishAppScore')).toBe('0');
+    });
+
+    it('sobrescreve valor anterior com o novo score', () => {
+        state.score = 30;
+        saveProgress();
+        state.score = 80;
+        saveProgress();
+        expect(localStorage.getItem('englishAppScore')).toBe('80');
+    });
+});
+
+describe('loadProgress', () => {
+    it('restaura o score do localStorage para o state', () => {
+        localStorage.setItem('englishAppScore', '70');
+        loadProgress();
+        expect(state.score).toBe(70);
+    });
+
+    it('atualiza o DOM com o score carregado', () => {
+        localStorage.setItem('englishAppScore', '40');
+        loadProgress();
+        expect(document.getElementById('points').innerText).toBe('40');
+    });
+
+    it('não altera o score se não houver nada guardado', () => {
+        loadProgress();
+        expect(state.score).toBe(0);
+    });
+
+    it('trata valor corrompido no localStorage — usa 0', () => {
+        localStorage.setItem('englishAppScore', 'abc');
+        loadProgress();
+        expect(state.score).toBe(0);
+    });
+});
+
+describe('integração save/load', () => {
+    it('score mantém-se após simular fechar e reabrir a app', () => {
+        state.current = { cat: "Greetings", en: "Nice to meet you", pt: "Prazer em conhecê-lo" };
+        vi.useFakeTimers();
+        handleRecognitionResult('Nice to meet you');
+        vi.useRealTimers();
+
+        // simula "fechar a app": reset do state em memória
+        resetState();
+        expect(state.score).toBe(0);
+
+        // simula "reabrir a app": carrega do localStorage
+        loadProgress();
+        expect(state.score).toBe(10);
     });
 });
