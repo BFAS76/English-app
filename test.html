@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Teste</title></head>
+<body>
+<h2 id="status">A carregar...</h2>
+<button onclick="document.getElementById('status').textContent = 'Botão onclick funciona!'">Teste onclick</button>
+<button id="btn2">Teste addEventListener</button>
+<div id="log" style="margin-top:20px;font-family:monospace;font-size:12px;"></div>
+
+<script>
+function log(msg) {
+    document.getElementById('log').innerHTML += msg + '<br>';
+}
+log('Script inline a funcionar ✓');
+document.getElementById('btn2').addEventListener('click', function() {
+    document.getElementById('status').textContent = 'addEventListener funciona!';
+});
+</script>
+
+<script type="module">
+log('Módulo ES a funcionar ✓');
+try {
+    const { library } = await import('./app.js');
+    log('app.js carregado ✓ (' + library.length + ' frases)');
+} catch(e) {
+    log('ERRO ao carregar app.js: ' + e.message);
+}
+</script>
+</body>
+</html>
