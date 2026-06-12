@@ -40,11 +40,17 @@
             border: 1px solid transparent;
         }
         .btn-lang.active, .btn-level.active { color: var(--primary); border-color: var(--primary); }
+        .auth-row { text-align: right; margin-bottom: 8px; }
+        .btn-auth { background: transparent; color: var(--text-sec); font-size: 0.75rem; padding: 5px 10px; border-radius: 10px; border: 1px solid #334155; }
+        .btn-auth:hover { border-color: var(--primary); color: var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="auth-row">
+        <button id="auth-btn" class="btn-auth" title="Login para sincronizar entre dispositivos">☁️ Sync</button>
+    </div>
     <div class="selector-row">
         <button class="btn-lang active" data-lang="en">🇬🇧 EN</button>
         <button class="btn-lang" data-lang="de">🇩🇪 DE</button>
@@ -69,8 +75,45 @@
 </div>
 
 <script type="module">
-    import { initAudio, playVoice, startRecognition, nextPhrase, switchLanguage, switchLevel } from './app.js';
+    import { initAudio, playVoice, startRecognition, nextPhrase, switchLanguage, switchLevel, loadFromCloud } from './app.js';
+    import { initFirebase, onAuthChange, signIn, signOutUser, getCurrentUser } from './firebase.js';
 
+    // ----------------------------------------------------------------
+    // Configuração Firebase — preenche com os teus valores
+    // Deixa apiKey como 'YOUR_API_KEY' para correr sem Firebase
+    // ----------------------------------------------------------------
+    const FIREBASE_CONFIG = {
+        apiKey:            'YOUR_API_KEY',
+        authDomain:        'YOUR_PROJECT.firebaseapp.com',
+        projectId:         'YOUR_PROJECT_ID',
+        storageBucket:     'YOUR_PROJECT.appspot.com',
+        messagingSenderId: 'YOUR_SENDER_ID',
+        appId:             'YOUR_APP_ID',
+    };
+
+    initFirebase(FIREBASE_CONFIG);
+
+    onAuthChange(async (user) => {
+        const btn = document.getElementById('auth-btn');
+        if (user) {
+            btn.textContent = `✓ ${user.displayName?.split(' ')[0] ?? 'Sync'}`;
+            btn.title = `Sessão: ${user.email} — clica para sair`;
+            await loadFromCloud();
+        } else {
+            btn.textContent = '☁️ Sync';
+            btn.title = 'Login com Google para sincronizar entre dispositivos';
+        }
+    });
+
+    document.getElementById('auth-btn').addEventListener('click', async () => {
+        if (getCurrentUser()) {
+            await signOutUser();
+        } else {
+            await signIn().catch(() => {});
+        }
+    });
+
+    // Controlos da app
     document.body.addEventListener('click', initAudio);
     document.querySelector('.btn-listen').addEventListener('click', playVoice);
     document.getElementById('mic-btn').addEventListener('click', startRecognition);

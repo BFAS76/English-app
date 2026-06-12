@@ -1,3 +1,5 @@
+import { cloudSave, cloudLoad } from './firebase.js';
+
 export const library = [
     // A1 — Iniciante
     { level: "A1", cat: "Greetings", en: "Good morning",               de: "Guten Morgen",                         pt: "Bom dia" },
@@ -120,6 +122,27 @@ export function saveProgress() {
     localStorage.setItem('englishAppScore', String(state.score));
     localStorage.setItem('englishAppLanguage', state.language);
     localStorage.setItem('englishAppLevel', state.level);
+    cloudSave({ score: state.score, language: state.language, level: state.level });
+}
+
+export async function loadFromCloud() {
+    const data = await cloudLoad();
+    if (!data) return;
+    if (data.score > state.score) {
+        state.score = data.score;
+        document.getElementById('points').innerText = String(state.score);
+        localStorage.setItem('englishAppScore', String(state.score));
+    }
+    if (data.language && LANGUAGES.includes(data.language)) {
+        state.language = data.language;
+        localStorage.setItem('englishAppLanguage', state.language);
+    }
+    if (data.level && LEVELS.includes(data.level)) {
+        state.level = data.level;
+        localStorage.setItem('englishAppLevel', state.level);
+    }
+    updateLanguageUI();
+    updateLevelUI();
 }
 
 export function loadProgress() {
