@@ -5,7 +5,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "dev": "python3 -m http.server 3000"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.0",
